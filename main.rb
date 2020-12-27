@@ -51,6 +51,7 @@ class Brave
     target = params[:target]
     
     target.hp -= damage
+    target.hp = 0 if target.hp < 0
     puts "#{target.name}は#{damage}のダメージを受けた"
   end
   
@@ -58,6 +59,7 @@ class Brave
     @offense * SPECIAL_ATTACK_CONSTANT
   end
 end
+
 
 class Monster
   attr_reader :offense, :defense
@@ -86,31 +88,49 @@ class Monster
     end
     
     puts "#{@name}の攻撃"
-    damage = @offense - brave.defense
-    brave.hp -= damage
+    damage = calculate_damage(brave)
     
-    puts "#{brave.name}は#{damage}のダメージを受けた"
+    cause_damage(target: brave, damage: damage)
+    
     puts "#{brave.name}の残りHPは#{brave.hp}だ"
   end
   
   private
-    def transform
-      transform_name = "ドラゴン"
-      
-      puts <<~EOS
-      #{@name}は怒っている
-      #{@name}は#{transform_name}に変身した
-      EOS
-      
-      @offense *= POWER_UP_RATE
-      @name = transform_name
-    end
+  
+  def calculate_damage(target)
+    @offense - target.defense
+  end
+  
+  def cause_damage(**params)
+    damage = params[:damage]
+    target = params[:target]
+
+    target.hp -= damage
+    target.hp = 0 if target.hp < 0
+    puts "#{target.name}は#{damage}のダメージを受けた"
+  end
+  
+  def transform
+    transform_name = "ドラゴン"
+    
+    puts <<~EOS
+    #{@name}は怒っている
+    #{@name}は#{transform_name}に変身した
+    EOS
+    
+    @offense *= POWER_UP_RATE
+    @name = transform_name
+  end
 end
 
 brave = Brave.new(name: "テリー", hp: 500, offense: 150, defense: 100)
 
 monster = Monster.new(name: "スライム", hp: 250, offense: 200, defense: 100)
 
-brave.attack(monster)
-
-monster.attack(brave)
+loop do
+  brave.attack(monster)
+  break if monster.hp <= 0
+  
+  monster.attack(brave)
+  break if brave.hp <= 0
+end
